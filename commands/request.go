@@ -202,7 +202,7 @@ func obliviousDnsRequest(c *cli.Context) error {
 	return nil
 }
 
-func ObliviousDnsRequest(domainName, dnsTypeString, targetName, proxy, customCAPath, configString string) error {
+func ObliviousDnsRequest(domainName, dnsTypeString, targetName, proxy, customCAPath, configString string) (dns.Msg, error) {
 	var useproxy bool
 	if len(proxy) > 0 {
 		useproxy = true
@@ -276,8 +276,8 @@ func ObliviousDnsRequest(domainName, dnsTypeString, targetName, proxy, customCAP
 		return err
 	}
 
-	fmt.Println(dnsResponse)
-	return nil
+	// fmt.Println(dnsResponse)
+	return dnsResponse
 }
 
 func validateEncryptedResponse(message odoh.ObliviousDNSMessage, queryContext odoh.QueryContext) (response *dns.Msg, err error) {
