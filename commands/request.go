@@ -203,6 +203,8 @@ func obliviousDnsRequest(c *cli.Context) error {
 }
 
 func ObliviousDnsRequest(domainName, dnsTypeString, targetName, proxy, customCAPath, configString string) (*dns.Msg, error) {
+	domainName = dns.Fqdn(domainName)
+
 	var useproxy bool
 	if len(proxy) > 0 {
 		useproxy = true
