@@ -202,7 +202,7 @@ func obliviousDnsRequest(c *cli.Context) error {
 	return nil
 }
 
-func ObliviousDnsRequest(domainName, dnsTypeString, targetName, proxy, customCAPath, configString string) (dns.Msg, error) {
+func ObliviousDnsRequest(domainName, dnsTypeString, targetName, proxy, customCAPath, configString string) (*dns.Msg, error) {
 	var useproxy bool
 	if len(proxy) > 0 {
 		useproxy = true
@@ -229,21 +229,21 @@ func ObliviousDnsRequest(domainName, dnsTypeString, targetName, proxy, customCAP
 	if len(strings.TrimSpace(configString)) == 0 {
 		odohConfigs, err = fetchTargetConfigs(targetName)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if len(odohConfigs.Configs) == 0 {
 			err := errors.New("target provided no valid odoh configs")
 			fmt.Println(err)
-			return err
+			return nil, err
 		}
 	} else {
 		configBytes, err := hex.DecodeString(configString)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		odohConfigs, err = odoh.UnmarshalObliviousDoHConfigs(configBytes)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	odohConfig := odohConfigs.Configs[0]
@@ -255,29 +255,29 @@ func ObliviousDnsRequest(domainName, dnsTypeString, targetName, proxy, customCAP
 	packedDnsQuery, err := dnsQuery.Pack()
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
 
 	odohQuery, queryContext, err := createOdohQuestion(packedDnsQuery, odohConfig.Contents)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
 
 	odohMessage, err := resolveObliviousQuery(odohQuery, useproxy, targetName, proxy, &client)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
 
 	dnsResponse, err := validateEncryptedResponse(odohMessage, queryContext)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
 
 	// fmt.Println(dnsResponse)
-	return dnsResponse
+	return dnsResponse, nil
 }
 
 func validateEncryptedResponse(message odoh.ObliviousDNSMessage, queryContext odoh.QueryContext) (response *dns.Msg, err error) {
