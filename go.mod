@@ -1,4 +1,4 @@
-module github.com/cloudflare/odoh-client-go
+module github.com/zyalm/odoh-client-go
 
 go 1.14
 

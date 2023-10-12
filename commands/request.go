@@ -186,6 +186,83 @@ func obliviousDnsRequest(c *cli.Context) error {
 		return err
 	}
 
+	odohMessage, err := resolveObliviousQuery(odohQuery, useproxy, targetName, proxy, &client)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	dnsResponse, err := validateEncryptedResponse(odohMessage, queryContext)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	fmt.Println(dnsResponse)
+	return nil
+}
+
+func ObliviousDnsRequest(domainName, dnsTypeString, targetName, proxy, customCAPath, configString string) error {
+	var useproxy bool
+	if len(proxy) > 0 {
+		useproxy = true
+	}
+
+	client := http.Client{}
+
+	if len(strings.TrimSpace(customCAPath)) != 0 {
+		customCAPool := x509.NewCertPool()
+
+		rootCA, err := ioutil.ReadFile(customCAPath)
+		if err != nil {
+			log.Fatalf("Error reading custom certificate : %v", err)
+		}
+		customCAPool.AppendCertsFromPEM(rootCA)
+		log.Println("Custom Trusted CA Certificates loaded")
+		tlsConfiguredTransport := &http.Transport{
+			TLSClientConfig: &tls.Config{RootCAs: customCAPool},
+		}
+		client.Transport = tlsConfiguredTransport
+	}
+	var odohConfigs odoh.ObliviousDoHConfigs
+	var err error
+	if len(strings.TrimSpace(configString)) == 0 {
+		odohConfigs, err = fetchTargetConfigs(targetName)
+		if err != nil {
+			return err
+		}
+		if len(odohConfigs.Configs) == 0 {
+			err := errors.New("target provided no valid odoh configs")
+			fmt.Println(err)
+			return err
+		}
+	} else {
+		configBytes, err := hex.DecodeString(configString)
+		if err != nil {
+			return err
+		}
+		odohConfigs, err = odoh.UnmarshalObliviousDoHConfigs(configBytes)
+		if err != nil {
+			return err
+		}
+	}
+	odohConfig := odohConfigs.Configs[0]
+
+	dnsType := dnsQueryStringToType(dnsTypeString)
+
+	dnsQuery := new(dns.Msg)
+	dnsQuery.SetQuestion(domainName, dnsType)
+	packedDnsQuery, err := dnsQuery.Pack()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	odohQuery, queryContext, err := createOdohQuestion(packedDnsQuery, odohConfig.Contents)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
 
 	odohMessage, err := resolveObliviousQuery(odohQuery, useproxy, targetName, proxy, &client)
 	if err != nil {

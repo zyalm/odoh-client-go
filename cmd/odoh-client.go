@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/cloudflare/odoh-client-go/commands"
 	"github.com/urfave/cli"
+	"github.com/zyalm/odoh-client-go/commands"
 )
 
 var (
